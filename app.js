@@ -2,70 +2,45 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const morgan = require("morgan");
-const { default: mongoose, mongo } = require("mongoose");
+const mongoose = require("mongoose");
+const cors = require("cors");
+require("dotenv/config");
 
-// Middleware
+app.use(cors());
+app.options("*", cors());
+
+//middleware
 app.use(bodyParser.json());
 app.use(morgan("tiny"));
 
-const productSchema = mongoose.Schema({
-  name: String,
-  image: String,
-  countInStock: {
-    type: Number,
-    required: true,
-  },
-});
+//Routes
+const categoriesRoutes = require("./routes/categories");
+const productsRoutes = require("./routes/products");
+const usersRoutes = require("./routes/users");
+const ordersRoutes = require("./routes/orders");
 
-const Product = mongoose.model("products", productSchema);
+const api = process.env.API_URL;
 
-require("dotenv/config");
+app.use(`${api}/categories`, categoriesRoutes);
+app.use(`${api}/products`, productsRoutes);
+app.use(`${api}/users`, usersRoutes);
+app.use(`${api}/orders`, ordersRoutes);
 
-api = process.env.API_URL;
-
-app.get(`${api}/products`, async (req, res) => {
-  const productList = await Product.find();
-
-  if (!productList) {
-    res.status(500).json({ success: false });
-  }
-
-  res.send(productList);
-});
-
-app.post(`${api}/products`, (req, res) => {
-  const product = new Product({
-    name: req.body.name,
-    image: req.body.image,
-    countInStock: req.body.countInStock,
-  });
-
-  product
-    .save()
-    .then((createdProduct) => {
-      res.status(201).json(createdProduct);
-    })
-    .catch((err) => {
-      res.status(500).json({
-        error: err,
-        success: false,
-      });
-    });
-});
-
+//Database
 mongoose
   .connect(process.env.CONNECTION_STRING, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    dbName: "eshop",
+    dbName: "eshop-database",
   })
   .then(() => {
-    console.log("Database Connected");
+    console.log("Database Connection is ready...");
   })
   .catch((err) => {
     console.log(err);
   });
 
+//Server
 app.listen(3000, () => {
-  console.log("Server started");
+  console.log("server is running http://localhost:3000");
 });
